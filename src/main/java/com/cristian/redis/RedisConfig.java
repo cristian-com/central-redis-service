@@ -112,5 +112,7 @@ public class RedisConfig {
          * Tune how much nested arrays are allowed on a redis response. This affects the parser performance.
          */
         public int maxNestedArrays = 32;
+
+        public int retries = 16;
     }
 }
