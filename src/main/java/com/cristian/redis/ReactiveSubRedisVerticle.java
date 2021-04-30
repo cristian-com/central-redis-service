@@ -5,14 +5,13 @@ import io.vertx.core.Promise;
 
 public class ReactiveSubRedisVerticle extends AbstractVerticle {
 
-    private SubRedis subRedis;
-
     @Override
     public void start(Promise<Void> startPromise) throws Exception {
         RedisConfig config = new RedisConfig();
 
-        subRedis = new SubRedis(config,
-                vertx);
+        try (var redisAPIProducer = new RedisAPIProducer(config, vertx)) {
+            redisAPIProducer.getRedisAPIContainer("HelloWorld");
+        }
     }
 
 }

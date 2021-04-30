@@ -1,4 +1,4 @@
 package com.cristian.redis.notifications;
 
-public record KeyEventNotification(String x) {
+public record KeyEventNotification(String event, String key) {
 }

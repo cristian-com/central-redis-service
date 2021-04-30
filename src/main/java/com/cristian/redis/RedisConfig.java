@@ -113,6 +113,8 @@ public class RedisConfig {
          */
         public int maxNestedArrays = 32;
 
-        public int retries = 16;
+        public int connectionRetries = 16;
+
+        public boolean subMode = true;
     }
 }

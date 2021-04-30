@@ -3,15 +3,13 @@ package com.cristian.redis;
 import io.vertx.core.Vertx;
 import io.vertx.redis.client.Redis;
 import io.vertx.redis.client.RedisAPI;
-import io.vertx.redis.client.RedisOptions;
-import io.vertx.redis.client.impl.RedisClient;
 
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
-public class RedisAPIProducer {
+public class RedisAPIProducer implements AutoCloseable {
     private static final Map<String, RedisAPIContainer> REDIS_APIS = new ConcurrentHashMap<>();
 
     private final Vertx vertx;
@@ -26,26 +24,46 @@ public class RedisAPIProducer {
         return REDIS_APIS.computeIfAbsent(name, new Function<>() {
             @Override
             public RedisAPIContainer apply(String s) {
-                Duration timeout = Duration.ofSeconds(10);
-                RedisConfig.RedisConfiguration redisConfiguration = RedisClientUtil.getConfiguration(RedisAPIProducer.this.redisConfig,
-                        name);
+                var redisConfiguration = RedisClientUtil.getConfiguration(RedisAPIProducer.this.redisConfig, name);
 
-                if (redisConfiguration.timeout.isPresent()) {
-                    timeout = redisConfiguration.timeout.get();
-                }
+                Redis redis = createClient(s, redisConfiguration);
+                RedisAPI redisAPI = getRedisAPI(redis, redisConfiguration.subMode);
 
-                RedisOptions options = RedisClientUtil.buildOptions(redisConfiguration);
-                Redis redis = Redis.createClient(vertx, options);
-                RedisAPI redisAPI = RedisAPI.api(redis);
-
-
-                RedisClient redisClient = null;//= new RedisClientImpl(redisAPI, timeout);
-                return new RedisAPIContainer(redis, redisAPI, redisClient);
+                return new RedisAPIContainer(redis, redisAPI);
             }
         });
     }
 
-    //@PreDestroy
+    private Redis createClient(String name, RedisConfig.RedisConfiguration redisConfiguration) {
+        var timeout = Duration.ofSeconds(10);
+
+        if (redisConfiguration.timeout.isPresent()) {
+            timeout = redisConfiguration.timeout.get();
+        }
+
+        var options = RedisClientUtil.buildOptions(redisConfiguration);
+
+        return Redis.createClient(vertx, options);
+    }
+
+    private RedisAPI getRedisAPI(Redis redis, boolean subscriberMode) {
+        if (subscriberMode) {
+            return getSingleConnectionClient(redis);
+        } else {
+            return getPooledClient(redis);
+        }
+    }
+
+    private RedisAPI getPooledClient(Redis client) {
+        return RedisAPI.api(client);
+    }
+
+    private RedisAPI getSingleConnectionClient(Redis client) {
+        var subscriberClient = new RedisSubscriberClient(client);
+        return RedisAPI.api(subscriberClient.getConnection());
+    }
+
+    @Override
     public void close() {
         for (RedisAPIContainer container : REDIS_APIS.values()) {
             container.close();

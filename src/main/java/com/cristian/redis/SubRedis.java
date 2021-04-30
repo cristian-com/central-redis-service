@@ -64,7 +64,7 @@ public class SubRedis {
                     conn.exceptionHandler(e -> {
                         // attempt to reconnect,
                         // if there is an unrecoverable error
-                        attemptReconnect(config.defaultClient.retries);
+                        attemptReconnect(0);
                     });
                     // allow further processing
                     promise.complete(conn);
