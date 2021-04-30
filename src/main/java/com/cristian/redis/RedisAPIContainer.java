@@ -5,8 +5,8 @@ import io.vertx.redis.client.RedisAPI;
 
 class RedisAPIContainer {
     private final Redis redis;
-
-    private final RedisAPI redisAPI;
+    private RedisAPI redisAPI;
+    private 
 
     public RedisAPIContainer(Redis redis, RedisAPI redisAPI) {
         this.redis = redis;

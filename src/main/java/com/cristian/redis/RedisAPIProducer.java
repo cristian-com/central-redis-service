@@ -59,8 +59,7 @@ public class RedisAPIProducer implements AutoCloseable {
     }
 
     private RedisAPI getSingleConnectionClient(Redis client) {
-        var subscriberClient = new RedisSubscriberClient(client);
-        return RedisAPI.api(subscriberClient.getConnection());
+        return RedisAPI.api(new RedisSubscriberClient(client).getConnection());
     }
 
     @Override
