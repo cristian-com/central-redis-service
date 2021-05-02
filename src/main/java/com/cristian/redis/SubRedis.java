@@ -22,53 +22,62 @@ public class SubRedis {
         this.config = config;
         this.options = RedisClientUtil.buildSubscriber(config.defaultClient);
 
-        createRedisClient().onSuccess(conn -> {
-            var api = RedisAPI.api(conn);
+        createRedisClient()
+                .onSuccess(
+                        conn -> {
+                            var api = RedisAPI.api(conn);
 
-            conn.handler(response -> {
-                if (response instanceof PushType notification) {
-                    for (Response val : notification) {
-                        System.out.println(val.toString());
-                    }
-                }
-            });
+                            conn.handler(
+                                    response -> {
+                                        if (response instanceof PushType notification) {
+                                            for (Response val : notification) {
+                                                System.out.println(val.toString());
+                                            }
+                                        }
+                                    });
 
-            vertx.eventBus().<JsonObject>consumer("io.vertx.redis.__keyevent@0__:*")
-                    .handler(msg -> {
-                        if (msg != null) System.out.println(msg.body());
-                    });
+                            vertx
+                                    .eventBus()
+                                    .<JsonObject>consumer("io.vertx.redis.__keyevent@0__:*")
+                                    .handler(
+                                            msg -> {
+                                                if (msg != null) System.out.println(msg.body());
+                                            });
 
-            api.psubscribe(List.of("__keyevent@0__:*"))
-                    .onComplete(response -> {
-                        System.out.println(response);
-                    });
-        })
-                .onComplete(res ->
-                        System.out.println(res));
+                            api.psubscribe(List.of("__keyevent@0__:*"))
+                                    .onComplete(
+                                            response -> {
+                                                System.out.println(response);
+                                            });
+                        })
+                .onComplete(res -> System.out.println(res));
     }
 
     /**
-     * Will create a redis client and setup a reconnect handler when there is
-     * an exception in the connection.
+     * Will create a redis client and setup a reconnect handler when there is an exception in the
+     * connection.
      */
     private Future<RedisConnection> createRedisClient() {
         Promise<RedisConnection> promise = Promise.promise();
 
         Redis.createClient(vertx, options)
                 .connect()
-                .onComplete(result -> {
-                    System.out.println(result.failed());
-                })
-                .onSuccess(conn -> {
-                    // make sure the client is reconnected on error
-                    conn.exceptionHandler(e -> {
-                        // attempt to reconnect,
-                        // if there is an unrecoverable error
-                        attemptReconnect(0);
-                    });
-                    // allow further processing
-                    promise.complete(conn);
-                });
+                .onComplete(
+                        result -> {
+                            System.out.println(result.failed());
+                        })
+                .onSuccess(
+                        conn -> {
+                            // make sure the client is reconnected on error
+                            conn.exceptionHandler(
+                                    e -> {
+                                        // attempt to reconnect,
+                                        // if there is an unrecoverable error
+                                        attemptReconnect(0);
+                                    });
+                            // allow further processing
+                            promise.complete(conn);
+                        });
 
         return promise.future();
     }
@@ -83,10 +92,11 @@ public class SubRedis {
             // retry with backoff up to 10240 ms
             long backoff = (long) (Math.pow(2, Math.min(retry, 10)) * 10);
 
-            vertx.setTimer(backoff, timer -> {
-                createRedisClient()
-                        .onFailure(t -> attemptReconnect(retry + 1));
-            });
+            vertx.setTimer(
+                    backoff,
+                    timer -> {
+                        createRedisClient().onFailure(t -> attemptReconnect(retry + 1));
+                    });
         }
     }
 }

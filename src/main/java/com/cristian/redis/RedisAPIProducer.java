@@ -1,5 +1,7 @@
 package com.cristian.redis;
 
+import com.cristian.redis.vertx.PooledRedisAPI;
+import com.cristian.redis.vertx.SingleConnectionRedisAPI;
 import io.vertx.core.Vertx;
 import io.vertx.redis.client.Redis;
 import io.vertx.redis.client.RedisAPI;
@@ -7,7 +9,6 @@ import io.vertx.redis.client.RedisAPI;
 import java.time.Duration;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Function;
 
 public class RedisAPIProducer implements AutoCloseable {
     private static final Map<String, RedisAPIContainer> REDIS_APIS = new ConcurrentHashMap<>();
@@ -21,17 +22,23 @@ public class RedisAPIProducer implements AutoCloseable {
     }
 
     public RedisAPIContainer getRedisAPIContainer(String name) {
-        return REDIS_APIS.computeIfAbsent(name, new Function<>() {
-            @Override
-            public RedisAPIContainer apply(String s) {
-                var redisConfiguration = RedisClientUtil.getConfiguration(RedisAPIProducer.this.redisConfig, name);
+        return REDIS_APIS.computeIfAbsent(
+                name,
+                s -> {
+                    var redisConfiguration =
+                            RedisClientUtil.getConfiguration(this.redisConfig, name);
 
-                Redis redis = createClient(s, redisConfiguration);
-                RedisAPI redisAPI = getRedisAPI(redis, redisConfiguration.subMode);
+                    Redis redis = createClient(name, redisConfiguration);
+                    RedisAPI redisAPI;
 
-                return new RedisAPIContainer(redis, redisAPI);
-            }
-        });
+                    if (redisConfiguration.subMode) {
+                        redisAPI = new SingleConnectionRedisAPI(redis);
+                    } else {
+                        redisAPI = new PooledRedisAPI(redis);
+                    }
+
+                    return new RedisAPIContainer(redis, redisAPI);
+                });
     }
 
     private Redis createClient(String name, RedisConfig.RedisConfiguration redisConfiguration) {
@@ -46,22 +53,6 @@ public class RedisAPIProducer implements AutoCloseable {
         return Redis.createClient(vertx, options);
     }
 
-    private RedisAPI getRedisAPI(Redis redis, boolean subscriberMode) {
-        if (subscriberMode) {
-            return getSingleConnectionClient(redis);
-        } else {
-            return getPooledClient(redis);
-        }
-    }
-
-    private RedisAPI getPooledClient(Redis client) {
-        return RedisAPI.api(client);
-    }
-
-    private RedisAPI getSingleConnectionClient(Redis client) {
-        return RedisAPI.api(new RedisSubscriberClient(client).getConnection());
-    }
-
     @Override
     public void close() {
         for (RedisAPIContainer container : REDIS_APIS.values()) {
@@ -70,5 +61,4 @@ public class RedisAPIProducer implements AutoCloseable {
 
         REDIS_APIS.clear();
     }
-
 }
