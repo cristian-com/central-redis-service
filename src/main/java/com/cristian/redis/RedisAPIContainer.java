@@ -3,7 +3,7 @@ package com.cristian.redis;
 import io.vertx.redis.client.Redis;
 import io.vertx.redis.client.RedisAPI;
 
-class RedisAPIContainer {
+public class RedisAPIContainer {
 
     private final RedisAPI redisAPI;
     private final Redis redis;

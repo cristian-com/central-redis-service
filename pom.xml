@@ -22,7 +22,7 @@
         <vertx.version>4.0.3</vertx.version>
         <junit-jupiter.version>5.7.0</junit-jupiter.version>
 
-        <main.verticle>com.cristian.redis.ReactiveSubRedisVerticle</main.verticle>
+        <main.verticle>com.cristian.redis.examples.SingleSubscriberVerticle</main.verticle>
         <launcher.class>io.vertx.core.Launcher</launcher.class>
     </properties>
 
@@ -42,6 +42,7 @@
         <dependency>
             <groupId>io.vertx</groupId>
             <artifactId>vertx-redis-client</artifactId>
+            <version>${vertx.version}</version>
         </dependency>
 
         <dependency>
@@ -60,6 +61,16 @@
             <artifactId>junit-jupiter-engine</artifactId>
             <version>${junit-jupiter.version}</version>
             <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.smallrye.reactive</groupId>
+            <artifactId>mutiny</artifactId>
+            <version>0.16.0</version>
+        </dependency>
+        <dependency>
+            <groupId>io.smallrye.reactive</groupId>
+            <artifactId>smallrye-mutiny-vertx-redis-client</artifactId>
+            <version>2.4.0</version>
         </dependency>
     </dependencies>
 
@@ -112,30 +123,6 @@
                         <argument>run</argument>
                         <argument>${main.verticle}</argument>
                     </arguments>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <source>15</source>
-                    <target>15</target>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <source>15</source>
-                    <target>15</target>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <source>15</source>
-                    <target>15</target>
                 </configuration>
             </plugin>
         </plugins>

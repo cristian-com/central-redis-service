@@ -30,7 +30,10 @@ public class RedisClientUtil {
         options.setMaxWaitingHandlers(redisConfig.maxWaitingHandlers);
         options.setMaxPoolSize(redisConfig.maxPoolSize);
         options.setMaxPoolWaiting(redisConfig.maxPoolWaiting);
+        options.setPoolRecycleTimeout(Math.toIntExact(redisConfig.poolRecycleTimeout.toMillis()));
 
+        redisConfig.poolCleanerInterval
+                .ifPresent(duration -> options.setPoolCleanerInterval(Math.toIntExact(duration.toMillis())));
         redisConfig.role.ifPresent(options::setRole);
         redisConfig.masterName.ifPresent(options::setMasterName);
         redisConfig.replicas.ifPresent(options::setUseReplicas);

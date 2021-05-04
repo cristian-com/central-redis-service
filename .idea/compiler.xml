@@ -9,5 +9,8 @@
         <module name="central-redis-service" />
       </profile>
     </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="central-redis-service" target="16" />
+    </bytecodeTargetLevel>
   </component>
 </project>

@@ -25,8 +25,7 @@ public class RedisAPIProducer implements AutoCloseable {
         return REDIS_APIS.computeIfAbsent(
                 name,
                 s -> {
-                    var redisConfiguration =
-                            RedisClientUtil.getConfiguration(this.redisConfig, name);
+                    var redisConfiguration = this.redisConfig.defaultClient;
 
                     Redis redis = createClient(name, redisConfiguration);
                     RedisAPI redisAPI;
