@@ -11,44 +11,53 @@ import java.util.Objects;
 
 public class SingleConnectionRedisAPI extends BaseRedisAPI {
 
+    private final Redis redis;
     private boolean onError = false;
-    private final Future<RedisConnection> connFuture;
     private RedisConnection connection;
 
     public SingleConnectionRedisAPI(Redis redis) {
         Objects.requireNonNull(redis);
-        connFuture = redis.connect();
-
-        connFuture
-                .onComplete(
-                        result -> {
-                            if (result.failed()) {
-                                onError = true;
-                            }
-                        })
-                .onSuccess(
-                        conn -> {
-                            connection = conn;
-                            onError = false;
-                        });
+        this.redis = redis;
     }
 
     public Future<RedisConnection> getConnection() {
-        return connFuture;
+        final Promise<RedisConnection> promise = Promise.promise();
+
+        if (Objects.nonNull(connection)) {
+            promise.complete(connection);
+        } else {
+            redis.connect()
+                    .onSuccess(conn -> {
+                        connection = conn;
+                        onError = false;
+                        promise.complete(conn);
+                    })
+                    .onFailure(error -> {
+                        onError = true;
+                        promise.fail(error);
+                    });
+        }
+
+        return promise.future();
     }
 
     @Override
     void send(Request req, Promise<Response> promise) {
-        if (connFuture.isComplete()) {
+        if (Objects.nonNull(connection)) {
             connection.send(req, promise);
         } else {
-            connFuture.onSuccess(connection -> connection.send(req, promise));
-            connFuture.onFailure(promise::fail);
+            getConnection()
+                    .onSuccess(conn -> conn.send(req, promise))
+                    .onFailure(promise::fail);
         }
     }
 
     @Override
     public void close() {
-        connection.close();
+        if (Objects.nonNull(connection)) {
+            connection.close();
+        } else {
+            System.out.println("API not yet connected");
+        }
     }
 }

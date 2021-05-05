@@ -62,20 +62,12 @@ public class SubRedis {
 
         Redis.createClient(vertx, options)
                 .connect()
-                .onComplete(
-                        result -> {
-                            System.out.println(result.failed());
-                        })
                 .onSuccess(
                         conn -> {
-                            // make sure the client is reconnected on error
                             conn.exceptionHandler(
                                     e -> {
-                                        // attempt to reconnect,
-                                        // if there is an unrecoverable error
                                         attemptReconnect(0);
                                     });
-                            // allow further processing
                             promise.complete(conn);
                         });
 
@@ -89,7 +81,6 @@ public class SubRedis {
         if (retry > MAX_RECONNECT_RETRIES) {
             // we should stop now, as there's nothing we can do.
         } else {
-            // retry with backoff up to 10240 ms
             long backoff = (long) (Math.pow(2, Math.min(retry, 10)) * 10);
 
             vertx.setTimer(
