@@ -30,6 +30,11 @@ public class SingleConnectionRedisAPI extends BaseRedisAPI {
                     .onSuccess(conn -> {
                         connection = conn;
                         onError = false;
+
+                        conn.exceptionHandler(e -> {
+                            System.out.println(connection);
+                            System.out.println("Hello Muchachos");
+                        });
                         promise.complete(conn);
                     })
                     .onFailure(error -> {
@@ -47,8 +52,13 @@ public class SingleConnectionRedisAPI extends BaseRedisAPI {
             connection.send(req, promise);
         } else {
             getConnection()
-                    .onSuccess(conn -> conn.send(req, promise))
-                    .onFailure(promise::fail);
+                    .onSuccess(conn -> {
+                        conn.send(req, promise);
+                    })
+                    .onFailure(error -> {
+                        System.out.println("Hello Muchachos");
+                        promise.fail(error);
+                    });
         }
     }
 

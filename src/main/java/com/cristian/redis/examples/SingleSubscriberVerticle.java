@@ -25,7 +25,7 @@ public class SingleSubscriberVerticle extends AbstractVerticle {
                             if (msg != null) System.out.println(msg.body());
                         });
 
-        var container = client("6502");
+        var container = client("6503");
 
         System.out.println("Hello world");
     }
@@ -42,10 +42,13 @@ public class SingleSubscriberVerticle extends AbstractVerticle {
 
         var container = redisAPIProducer.getRedisAPIContainer("HelloWorld" + port);
 
-        container.getRedisAPI().psubscribe(List.of("__keyevent@0__:*"))
-        .onComplete(e -> {
-            container.getRedis().close();
-        });
+        //container.getRedisAPI().psubscribe(List.of("__keyevent@0__:*"));
+        container.getRedisAPI().set(List.of("key", "value")).
+                onComplete(response -> {
+                            System.out.println(response);
+                            container.getRedisAPI().set(List.of("key", "value2"));
+                        }
+                );
 
         return container;
     }
