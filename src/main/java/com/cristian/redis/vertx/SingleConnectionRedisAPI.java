@@ -12,7 +12,6 @@ import java.util.Objects;
 public class SingleConnectionRedisAPI extends BaseRedisAPI {
 
     private final Redis redis;
-    private boolean onError = false;
     private RedisConnection connection;
 
     public SingleConnectionRedisAPI(Redis redis) {
@@ -27,20 +26,7 @@ public class SingleConnectionRedisAPI extends BaseRedisAPI {
             promise.complete(connection);
         } else {
             redis.connect()
-                    .onSuccess(conn -> {
-                        connection = conn;
-                        onError = false;
-
-                        conn.exceptionHandler(e -> {
-                            System.out.println(connection);
-                            System.out.println("Hello Muchachos");
-                        });
-                        promise.complete(conn);
-                    })
-                    .onFailure(error -> {
-                        onError = true;
-                        promise.fail(error);
-                    });
+            .onSuccess(conn -> connection = conn);
         }
 
         return promise.future();
@@ -52,13 +38,8 @@ public class SingleConnectionRedisAPI extends BaseRedisAPI {
             connection.send(req, promise);
         } else {
             getConnection()
-                    .onSuccess(conn -> {
-                        conn.send(req, promise);
-                    })
-                    .onFailure(error -> {
-                        System.out.println("Hello Muchachos");
-                        promise.fail(error);
-                    });
+                    .onSuccess(conn -> conn.send(req, promise))
+                    .onFailure(promise::fail);
         }
     }
 
@@ -70,4 +51,5 @@ public class SingleConnectionRedisAPI extends BaseRedisAPI {
             System.out.println("API not yet connected");
         }
     }
+
 }

@@ -25,7 +25,7 @@ public class SingleSubscriberVerticle extends AbstractVerticle {
                             if (msg != null) System.out.println(msg.body());
                         });
 
-        var container = client("6503");
+        var container = client("7000");
 
         System.out.println("Hello world");
     }
