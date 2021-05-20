@@ -41,6 +41,7 @@ public class RedisSubscriber implements AutoCloseable {
     }
 
     public void start() {
+        subscribe(channels.keySet().stream().toList());
         subscribe(patterns.keySet().stream().toList());
 
         redisAPI.getConnection()
@@ -49,8 +50,13 @@ public class RedisSubscriber implements AutoCloseable {
         running = true;
     }
 
+    private void setPingTimer() {
+        int pingRate = 10;
+        vertx.setPeriodic(pingRate,
+                delay -> redisAPI.ping(List.of("rd.check")));
+    }
+
     public void close() {
-        System.out.println("Not yet implemented");
         running = false;
     }
 
@@ -92,7 +98,7 @@ public class RedisSubscriber implements AutoCloseable {
         return true;
     }
 
-    public <T> void addChannelHandler(String channel, ChannelConsumer<T> handler) {
+    public void addChannelHandler(String channel, ChannelConsumer<?> handler) {
         if (running) {
             subscribe(List.of(channel));
         }

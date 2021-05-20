@@ -16,4 +16,14 @@ public class ExampleMessageConsumer extends ChannelConsumer<ExampleMessage> {
 
     }
 
+    @Override
+    protected Class<ExampleMessage> getClazz() {
+        return ExampleMessage.class;
+    }
+
+    @Override
+    protected String getChannelName() {
+        return channel;
+    }
+
 }
