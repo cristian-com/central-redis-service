@@ -41,11 +41,13 @@ public class RedisSubscriber implements AutoCloseable {
     }
 
     public void start() {
+        redisAPI.getConnection()
+                .onSuccess(conn -> {
+                    conn.handler(this::handlePubMessage);
+                });
+
         subscribe(channels.keySet().stream().toList());
         subscribe(patterns.keySet().stream().toList());
-
-        redisAPI.getConnection()
-                .onSuccess(conn -> conn.handler(this::handlePubMessage));
 
         running = true;
     }
@@ -98,16 +100,16 @@ public class RedisSubscriber implements AutoCloseable {
         return true;
     }
 
-    public void addChannelHandler(String channel, ChannelConsumer<?> handler) {
+    public void addChannelHandler(ChannelConsumer<?> handler) {
         if (running) {
-            subscribe(List.of(channel));
+            subscribe(List.of(handler.getChannelName()));
         }
 
         var consumer = eventBus
-                .consumer(BASE_ADDRESS + "message" + channel)
+                .consumer(BASE_ADDRESS + "message." + handler.getChannelName())
                 .handler(msg -> handler.handleInternal(msg.body()));
 
-        channels.put(channel, new ConsumerEntry(handler, consumer, false));
+        channels.put(handler.getChannelName(), new ConsumerEntry(handler, consumer, false));
     }
 
     private boolean handleChannelSubscription(Multi response) {

@@ -26,7 +26,11 @@ public class SingleConnectionRedisAPI extends BaseRedisAPI {
             promise.complete(connection);
         } else {
             redis.connect()
-            .onSuccess(conn -> connection = conn);
+            .onSuccess(conn -> {
+                connection = conn;
+                promise.complete(connection);
+            })
+            .onFailure(promise::fail);
         }
 
         return promise.future();

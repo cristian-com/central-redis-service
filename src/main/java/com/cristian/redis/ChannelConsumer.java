@@ -10,15 +10,11 @@ public abstract class ChannelConsumer<T> implements Handler<T>,
 
     private boolean automaticStart = true;
 
-    public ChannelConsumer(RedisSubscriber subscriber,
-                           String channel, boolean automaticStart) {
-        this(subscriber, channel);
-        this.automaticStart = automaticStart;
+    public ChannelConsumer() {
     }
 
-    public ChannelConsumer(RedisSubscriber subscriber,
-                           String channel) {
-        subscriber.addChannelHandler(channel, this);
+    public ChannelConsumer(boolean automaticStart) {
+        this.automaticStart = automaticStart;
     }
 
     @SuppressWarnings("unchecked")
