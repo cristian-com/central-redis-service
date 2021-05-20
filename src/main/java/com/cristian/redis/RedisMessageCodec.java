@@ -7,7 +7,6 @@ import io.vertx.core.json.JsonObject;
 public class RedisMessageCodec implements MessageCodec<JsonObject, SubMessage> {
     @Override
     public void encodeToWire(Buffer buffer, JsonObject jsonObject) {
-
     }
 
     @Override
