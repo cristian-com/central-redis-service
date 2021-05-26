@@ -56,7 +56,7 @@ public abstract class ChannelConsumer<T> implements Handler<T>,
 
     @Override
     public final String name() {
-        return getChannelName();
+        return "rd.message.codec." + getChannelName();
     }
 
     protected abstract Class<T> getClazz();

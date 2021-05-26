@@ -1,6 +1,7 @@
 package com.cristian.redis.vertx;
 
 import io.vertx.core.Future;
+import io.vertx.core.Handler;
 import io.vertx.core.Promise;
 import io.vertx.redis.client.Redis;
 import io.vertx.redis.client.RedisConnection;
@@ -13,10 +14,22 @@ public class SingleConnectionRedisAPI extends BaseRedisAPI {
 
     private final Redis redis;
     private RedisConnection connection;
+    private Handler<Response> respHandler;
+    private Handler<Throwable> exceptionHand;
 
     public SingleConnectionRedisAPI(Redis redis) {
         Objects.requireNonNull(redis);
         this.redis = redis;
+    }
+
+    public SingleConnectionRedisAPI responseHandler(final Handler<Response> respHandler){
+        this.respHandler = respHandler;
+        return this;
+    }
+
+    public SingleConnectionRedisAPI exceptionHandler(final Handler<Throwable> exceptionHand){
+        this.exceptionHand = exceptionHand;
+        return this;
     }
 
     public Future<RedisConnection> getConnection() {
@@ -27,7 +40,10 @@ public class SingleConnectionRedisAPI extends BaseRedisAPI {
         } else {
             redis.connect()
             .onSuccess(conn -> {
-                connection = conn;
+                connection = conn
+                    .handler(respHandler)
+                    .exceptionHandler(exceptionHand);
+
                 promise.complete(connection);
             })
             .onFailure(promise::fail);

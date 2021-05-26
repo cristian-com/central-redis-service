@@ -13,6 +13,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * This class is not thread safe.
+ */
 public class RedisSubscriber implements AutoCloseable {
 
     private static final String BASE_ADDRESS = "rd.message.";
@@ -34,28 +37,34 @@ public class RedisSubscriber implements AutoCloseable {
         this.redisAPIContainer = redisAPIContainer;
 
         if (redisAPIContainer.getRedisAPI() instanceof SingleConnectionRedisAPI singleConnectionRedisAPI) {
-            this.redisAPI = singleConnectionRedisAPI;
+            this.redisAPI = singleConnectionRedisAPI
+                    .responseHandler(this::handlePubMessage);
         } else {
             throw new IllegalArgumentException("Pooled clients not supported");
         }
     }
 
     public void start() {
-        redisAPI.getConnection()
-                .onSuccess(conn -> {
-                    conn.handler(this::handlePubMessage);
-                });
+        redisAPI.getConnection();
 
         subscribe(channels.keySet().stream().toList());
         subscribe(patterns.keySet().stream().toList());
+
+        setPingTimer();
 
         running = true;
     }
 
     private void setPingTimer() {
-        int pingRate = 10;
+        int pingRate = 10000;
         vertx.setPeriodic(pingRate,
-                delay -> redisAPI.ping(List.of("rd.check")));
+                delay -> {
+                    System.out.println("Heloooooo");
+                    redisAPI.ping(List.of("rd.check"))
+                    .onComplete(e ->{
+                        System.out.println(e);
+                    });
+                });
     }
 
     public void close() {
@@ -68,7 +77,7 @@ public class RedisSubscriber implements AutoCloseable {
     }
 
     private boolean handlePmessage(Multi response) {
-        if (response.size() == 4) {
+        if (!(response.size() == 4)) {
             return false;
         }
 
@@ -85,17 +94,20 @@ public class RedisSubscriber implements AutoCloseable {
     }
 
     private boolean handleMessage(Multi response) {
-        if (response.size() == 3) {
+        if (!(response.size() == 3)) {
             return false;
         }
 
         final String channel = response.get(1).toString();
         final JsonObject message = new JsonObject(response.get(2).toString());
 
-        DeliveryOptions deliveryOptions = new DeliveryOptions()
-                .setCodecName("rd.message.codec" + channel);
+        System.out.println("Publishing to codec: " + "rd.message.codec." + channel);
+        System.out.println("Publishing to address: " + BASE_ADDRESS + "message." + channel);
 
-        eventBus.publish(BASE_ADDRESS + "message" + channel, message, deliveryOptions);
+        DeliveryOptions deliveryOptions = new DeliveryOptions()
+                .setCodecName("rd.message.codec." + channel);
+
+        eventBus.publish(BASE_ADDRESS + "message." + channel, message, deliveryOptions);
 
         return true;
     }
@@ -104,6 +116,11 @@ public class RedisSubscriber implements AutoCloseable {
         if (running) {
             subscribe(List.of(handler.getChannelName()));
         }
+
+        eventBus.registerCodec(handler);
+
+        System.out.println("Registering codec: " + handler.name());
+        System.out.println("Consuming address: " + BASE_ADDRESS + "message." + handler.getChannelName());
 
         var consumer = eventBus
                 .consumer(BASE_ADDRESS + "message." + handler.getChannelName())

@@ -1,4 +1,6 @@
 package com.cristian.redis.examples;
 
-public record ExampleMessage(String value) {
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+public record ExampleMessage(@JsonProperty("value") String value) {
 }
